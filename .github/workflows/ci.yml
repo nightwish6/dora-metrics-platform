@@ -93,6 +93,21 @@ jobs:
       - name: Create DuckDB data directory
         run: mkdir -p dbt/data/duckdb
 
+      - name: Create empty JSON files for dbt run
+        run: |
+          mkdir -p dbt/data/raw
+          echo '[]' > dbt/data/raw/vscode_pulls.json
+          echo '[]' > dbt/data/raw/vscode_issues.json
+          echo '[]' > dbt/data/raw/vscode_commits.json
+          echo '[]' > dbt/data/raw/vscode_releases.json
+          echo '[]' > dbt/data/raw/vscode_milestones.json
+          echo '[]' > dbt/data/raw/vscode_workflow_runs.json
+
+      - name: dbt run (create tables)
+        run: |
+          cd dbt
+          dbt run --select 1_raw
+
       - name: dbt test (raw models only)
         run: |
           cd dbt
