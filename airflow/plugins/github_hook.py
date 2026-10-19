@@ -78,7 +78,7 @@ class GitHubHook(BaseHook):
         since_param_value: str | None = None,
         until_param_name: str = "until",
         until_param_value: str | None = None,
-        max_records: int = 100000,
+        max_records: int = 10000,
         data_array_key: str | None = None,
     ) -> list[dict[str, Any]]:
         """
@@ -95,7 +95,7 @@ class GitHubHook(BaseHook):
             until_param_name: Name of the until query parameter (default "until")
             until_param_value: If provided, this param value is locked across all pages
                                (e.g. "now()" for commits date range)
-            max_records: Maximum number of records to fetch (default 100 000)
+            max_records: Maximum number of records to fetch (default 10 000)
             data_array_key: If set, extract array from response dict (e.g. "workflow_runs")
         """
         import copy
@@ -232,7 +232,7 @@ class GitHubHook(BaseHook):
         since_param_value: str | None = None,
         until_param_name: str = "until",
         until_param_value: str | None = None,
-        max_records: int = 100000,
+        max_records: int = 10000,
         data_array_key: str | None = None,
     ) -> Any:
         """
@@ -247,7 +247,7 @@ class GitHubHook(BaseHook):
             since_param_value: ISO timestamp for incremental loads (locked across pages)
             until_param_name: Name of the until query parameter (default "until")
             until_param_value: ISO timestamp for end of range (locked across pages)
-            max_records: Maximum records to fetch (default 100 000)
+            max_records: Maximum records to fetch (default 10 000)
             data_array_key: Extract array from response dict (e.g. "workflow_runs")
 
         Returns:
