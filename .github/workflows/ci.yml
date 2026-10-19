@@ -91,7 +91,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Create DuckDB data directory
-        run: mkdir -p data/duckdb
+        run: mkdir -p dbt/data/duckdb
 
       - name: dbt test (raw models only)
         run: |
