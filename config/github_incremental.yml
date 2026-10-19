@@ -1,0 +1,87 @@
+# GitHub API Endpoints Configuration for Incremental Loads
+#
+# Order determines the sequential execution chain of run_dbt_* tasks.
+# All load_* tasks run in parallel; run_dbt_* tasks run sequentially.
+
+endpoints:
+  # ============================================================
+  # Pull Requests
+  # ============================================================
+  - table_name: pull_requests
+    api_endpoint: "/repos/{owner}/{repo}/pulls"
+    api_params:
+      state: "closed"
+      base: "main"
+      sort: "updated"
+      direction: "asc"
+    since_field: "data->>'updated_at'"
+    api_since_param: "since"
+    incremental: true
+    full_load_when_empty: true
+
+  # ============================================================
+  # Issues
+  # ============================================================
+  - table_name: issues
+    api_endpoint: "/repos/{owner}/{repo}/issues"
+    api_params:
+      state: "closed"
+      sort: "updated"
+      direction: "asc"
+    since_field: "data->>'updated_at'"
+    api_since_param: "since"
+    incremental: true
+    full_load_when_empty: true
+
+  # ============================================================
+  # Commits
+  # ============================================================
+  - table_name: commits
+    api_endpoint: "/repos/{owner}/{repo}/commits"
+    api_params:
+      sha: "main"
+    since_field: "data->>'$.commit.committer.date'"
+    api_since_param: "since"
+    api_until_param: "until"
+    incremental: true
+    full_load_when_empty: true
+
+  # ============================================================
+  # Workflow Runs (GitHub Actions)
+  # ============================================================
+  - table_name: workflow_runs
+    api_endpoint: "/repos/{owner}/{repo}/actions/runs"
+    api_params: 
+      status: "completed"
+    since_field: "data->>'updated_at'"
+    api_since_param: "created"
+    data_array_key: "workflow_runs"
+    incremental: true
+    full_load_when_empty: true
+
+  # ============================================================
+  # Releases
+  # ============================================================
+  - table_name: releases
+    api_endpoint: "/repos/{owner}/{repo}/releases"
+    api_params:
+      sort: "created"
+      direction: "asc"
+    since_field: "data->>'published_at'"
+    api_since_param: null
+    incremental: false
+    full_load_when_empty: false
+
+  # ============================================================
+  # Milestones
+  # ============================================================
+  - table_name: milestones
+    api_endpoint: "/repos/{owner}/{repo}/milestones"
+    api_params:
+      state: "all"
+      sort: "created"
+      direction: "asc"
+    since_field: "data->>'updated_at'"
+    api_since_param: null
+    incremental: false
+    full_load_when_empty: false

@@ -1,0 +1,8 @@
+dora_metrics_platform:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "data/duckdb/data.duckdb"
+      threads: 1
+      schema: raw

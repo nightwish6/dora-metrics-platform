@@ -1,0 +1,44 @@
+# GitHub repositories configuration for DORA metrics
+
+repositories:
+  - owner: microsoft
+    repo: vscode
+    branch: main
+    enabled: true
+    
+  - owner: apache
+    repo: airflow
+    branch: main
+    enabled: true
+
+# GitHub API connection settings
+github:
+  base_url: https://api.github.com
+  rate_limit_retry: true
+  default_per_page: 100
+  max_retries: 3
+
+# Fetch configuration
+fetch:
+  releases:
+    enabled: true
+    paginate: true
+  pull_requests:
+    enabled: true
+    state: closed
+    base_branch: main
+  issues:
+    enabled: true
+    state: closed
+    labels:
+      - "bug"
+      - "enhancement"
+  commits:
+    enabled: true
+    sha: main
+  milestones:
+    enabled: true
+    state: all
+  actions:
+    enabled: true
+    status: completed

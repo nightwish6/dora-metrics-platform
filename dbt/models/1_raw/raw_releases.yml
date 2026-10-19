@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: raw_releases
+    description: "Raw GitHub releases from repository"
+    columns:
+      - name: id
+        data_tests:
+          - unique
+          - not_null
+      - name: data
+        data_tests:
+          - not_null
+      - name: source_name
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['releases']
+      - name: repo_name
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['vscode', 'airflow']
+      - name: loaded_at
+        data_tests:
+          - not_null

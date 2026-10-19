@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint:
+    name: Python Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ruff
+        run: pip install ruff==0.4.0
+
+      - name: Check formatting
+        run: ruff format --check airflow/plugins airflow/dags dbt
+
+      - name: Run ruff check
+        run: ruff check airflow/plugins airflow/dags dbt
+
+  test:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run pytest
+        run: pytest tests/ -v
+
+  dbt-parse:
+    name: dbt Parse
+    runs-on: ubuntu-latest
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create dbt target directory
+        run: mkdir -p dbt/target
+
+      - name: dbt parse
+        run: |
+          cd dbt
+          dbt parse
+
+  dbt-test:
+    name: dbt Test
+    runs-on: ubuntu-latest
+    needs: [dbt-parse]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create DuckDB data directory
+        run: mkdir -p data/duckdb
+
+      - name: dbt test (raw models only)
+        run: |
+          cd dbt
+          dbt test --select 1_raw
