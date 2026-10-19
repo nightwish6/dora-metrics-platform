@@ -28,4 +28,4 @@ dbt/target/
 dbt/logs/
 
 # Data files
-data/
+data/duckdb/*.duckdb
