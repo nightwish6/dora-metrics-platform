@@ -5,7 +5,7 @@
     alias='workflow_runs',
     unique_key='id'
 ) }}
-SELECT
+SELECT DISTINCT
     md5(CAST(t AS VARCHAR)) AS id,
     CAST(t AS JSON) AS data,
     'workflow_runs' AS source_name,

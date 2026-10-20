@@ -26,14 +26,30 @@ class DbtRunOperator(BaseOperator):
     """
     Run dbt model for a specific table using dbtRunner API.
 
-    Example usage::
+    Supports two modes:
+
+    1. **Raw mode** (default): reads JSON file, runs `raw_{table_name}`, passes JSON path via vars.
+       Used for `raw` models.
+
+    2. **Generic mode**: runs any dbt model by name (e.g. `stg_commits`).
+       No JSON file needed. Used for `staged`, `marts`, `metrics`, etc.
+
+    Example usage — raw mode::
 
         DbtRunOperator(
-            task_id="run_dbt_pull_requests",
-            table_name="pull_requests",
+            task_id="run_dbt_raw_commits",
+            table_name="commits",
             repo_name="vscode",
             dbt_project_dir="/opt/airflow/dbt",
             raw_data_dir="/opt/airflow/data/raw",
+            dag=dag,
+        )
+
+    Example usage — generic mode (staging, marts, etc.)::
+
+        DbtRunOperator(
+            task_id="run_stg_commits",
+            dbt_model="stg_commits",  # ← specify model name directly
             dag=dag,
         )
     """
@@ -41,30 +57,40 @@ class DbtRunOperator(BaseOperator):
     @apply_defaults
     def __init__(
         self,
-        table_name: str,
+        table_name: str | None = None,
+        dbt_model: str | None = None,
         repo_name: str = "vscode",
         dbt_project_dir: str = "/opt/airflow/dbt",
         raw_data_dir: str = "/opt/airflow/data/raw",
         duckdb_path: str = "/opt/airflow/data/duckdb/data.duckdb",
         config_path: str | None = None,
         command: str = "run",
+        dbt_layer: str | None = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
+
+        # Determine mode: generic mode if dbt_model is provided, else raw mode
+        self.generic_mode = dbt_model is not None
         self.table_name = table_name
+        self.dbt_model = dbt_model
         self.repo_name = repo_name
         self.dbt_project_dir = dbt_project_dir
         self.raw_data_dir = raw_data_dir
         self.duckdb_path = duckdb_path
         self.config_path = config_path
         self.command = command
+        self.dbt_layer = dbt_layer
 
-        # Load endpoint configuration (only for "run" command)
-        if command == "run":
-            self.endpoint_config = load_endpoint_config(table_name, config_path)
+        # Load endpoint configuration only for raw mode
+        if command == "run" and not self.generic_mode:
+            if not self.table_name:
+                raise ValueError("table_name is required when dbt_model is not specified")
+            self.endpoint_config = load_endpoint_config(self.table_name, config_path)
             if self.endpoint_config is None:
                 raise ValueError(
-                    f"No endpoint config found for table_name='{table_name}'. " f"Check config/github_incremental.yml"
+                    f"No endpoint config found for table_name='{self.table_name}'. "
+                    f"Check config/github_incremental.yml"
                 )
 
     def execute(self, context: dict[str, Any]) -> dict[str, Any]:
@@ -90,13 +116,26 @@ class DbtRunOperator(BaseOperator):
         # Step 1: Run dbt tests
         # ============================================================
         if self.command == "test":
-            self.log.info("Running dbt tests for raw layer...")
+            self.log.info("Running dbt tests...")
 
-            result = runner.invoke(
-                [
-                    "test",
-                ]
-            )
+            # If dbt_layer is specified, run tests for all models in that layer
+            if self.dbt_layer:
+                layer_models = {
+                    "raw": "raw_commits raw_issues raw_milestones raw_pull_requests raw_releases raw_workflow_runs",
+                    "staged": "stg_commits",
+                    "marts": "",
+                    "metrics": "",
+                }
+                models = layer_models.get(self.dbt_layer)
+                if models:
+                    self.log.info("Running tests for layer '%s': %s", self.dbt_layer, models)
+                    result = runner.invoke(["test", "--models"] + models.split())
+                else:
+                    self.log.info("Running all tests")
+                    result = runner.invoke(["test"])
+            else:
+                self.log.info("Running all tests")
+                result = runner.invoke(["test"])
 
             if not result.success:
                 error_msg = result.exception if result.exception else "dbt test failed with unknown error"
@@ -110,8 +149,33 @@ class DbtRunOperator(BaseOperator):
             }
 
         # ============================================================
-        # Step 2: Run dbt models (default behavior)
+        # Step 2: Run dbt models
         # ============================================================
+
+        # --- Generic mode (staging, marts, etc.) ---
+        if self.generic_mode:
+            self.log.info("Running dbt model in generic mode: %s", self.dbt_model)
+
+            result = runner.invoke(
+                [
+                    "run",
+                    "--select",
+                    self.dbt_model,
+                ]
+            )
+
+            if not result.success:
+                error_msg = result.exception if result.exception else "dbt run failed with unknown error"
+                self.log.error("dbt run failed: %s", error_msg)
+                raise RuntimeError(f"dbt run failed: {error_msg}")
+
+            self.log.info("dbt run completed successfully for model: %s", self.dbt_model)
+            return {
+                "status": "success",
+                "dbt_model": self.dbt_model,
+            }
+
+        # --- Raw mode (reads JSON file) ---
         # Determine JSON file path
         json_file = None
 
@@ -146,7 +210,6 @@ class DbtRunOperator(BaseOperator):
                 e.lineno,
                 e.colno,
             )
-            # Read problematic context for debugging
             try:
                 with open(json_file, errors="replace") as f:
                     lines = f.readlines()

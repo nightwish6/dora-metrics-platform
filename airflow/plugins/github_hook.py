@@ -78,7 +78,7 @@ class GitHubHook(BaseHook):
         since_param_value: str | None = None,
         until_param_name: str = "until",
         until_param_value: str | None = None,
-        max_records: int = 5000,
+        max_records: int = 200000,
         data_array_key: str | None = None,
     ) -> list[dict[str, Any]]:
         """
@@ -232,7 +232,7 @@ class GitHubHook(BaseHook):
         since_param_value: str | None = None,
         until_param_name: str = "until",
         until_param_value: str | None = None,
-        max_records: int = 5000,
+        max_records: int = 200000,
         data_array_key: str | None = None,
     ) -> Any:
         """
@@ -527,7 +527,7 @@ class GitHubHook(BaseHook):
             if not next_urls:
                 break
 
-            if len(all_runs) > 10000:
+            if len(all_runs) > 100000:
                 self.log.warning("Reached limit of 10000 records, stopping pagination")
                 break
 

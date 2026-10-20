@@ -8,9 +8,9 @@ USER root
 
 RUN mkdir -p /opt/airflow/dags /opt/airflow/logs /opt/airflow/configs \
              /opt/airflow/plugins /opt/airflow/data/duckdb \
-             /opt/airflow/dbt/models/2_staged \
-             /opt/airflow/dbt/models/3_marts \
-             /opt/airflow/dbt/models/4_metrics \
+             /opt/airflow/dbt/models/staged \
+             /opt/airflow/dbt/models/marts \
+             /opt/airflow/dbt/models/metrics \
     && chown -R airflow:0 /opt/airflow
 
 USER airflow

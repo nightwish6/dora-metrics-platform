@@ -15,11 +15,13 @@ Thumbs.db
 .ruff_cache/
 
 # Python
+.venv/
 __pycache__/
 *.py[cod]
 *.egg-info/
 
 # Pytest
+logs/
 .pytest_cache/
 
 # dbt
@@ -28,8 +30,11 @@ dbt/target/
 dbt/logs/
 
 # Data files
+data/
 data/duckdb/*.duckdb
 data/raw
 
 # AI assistant config
 .gigacode_vsc/
+.gigacode/
+.vscode/

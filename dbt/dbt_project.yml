@@ -25,6 +25,10 @@ models:
   dora_metrics_platform:
     +materialized: table
     1_raw:
+      +schema: raw
       +materialized: incremental
       +incremental_strategy: delete+insert
-
+    2_staged:
+      +schema: staging
+      +materialized: table
+      +incremental_strategy: insert_overwrite

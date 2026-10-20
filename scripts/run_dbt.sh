@@ -21,13 +21,13 @@ case "${1:-run}" in
     ;;
   test)
     echo "=== dbt test ==="
-    dbt test --select 1_raw
+    dbt test --select raw
     ;;
   run)
     echo "=== dbt run ==="
-    dbt run --select 1_raw
+    dbt run --select raw
     echo "=== dbt test ==="
-    dbt test --select 1_raw
+    dbt test --select raw
     ;;
   clean)
     echo "=== dbt clean ==="

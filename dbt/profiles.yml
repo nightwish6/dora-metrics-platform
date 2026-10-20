@@ -4,5 +4,6 @@ dora_metrics_platform:
     dev:
       type: duckdb
       path: "data/duckdb/data.duckdb"
+      schema: main
       threads: 1
-      schema: raw
+      

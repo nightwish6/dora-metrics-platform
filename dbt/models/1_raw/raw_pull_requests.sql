@@ -1,11 +1,9 @@
 -- Raw pull requests model
--- Parameters:
---   json_path: Path to JSON file with pull request data
 {{ config(
     alias='pull_requests',
     unique_key='id'
 ) }}
-SELECT
+SELECT DISTINCT
     md5(CAST(t.number AS VARCHAR)) AS id,
     CAST(t AS JSON) AS data,
     'pull_requests' AS source_name,

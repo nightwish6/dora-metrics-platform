@@ -5,7 +5,7 @@
     alias='commits',
     unique_key='id'
 ) }}
-SELECT
+SELECT DISTINCT
     md5(CAST(t.sha AS VARCHAR)) AS id,
     CAST(t AS JSON) AS data,
     'commits' AS source_name,

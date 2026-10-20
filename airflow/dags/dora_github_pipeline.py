@@ -36,14 +36,19 @@ endpoints = list(seen.values())
 # Architecture:
 #   1. load_* tasks — all run in parallel
 #   2. run_dbt_raw_* tasks — all run sequentially, BUT only after ALL load tasks complete
+#   3. run_dbt_stg_commits — runs staged models
+#   4. run_dbt_raw_tests — tests raw layer
+#   5. run_dbt_stg_tests — tests staged layer
 #
-# load_repo_metadata ──┐
-# load_releases ───────┤
-# load_issues ─────────┤
-# load_pull_requests ──┤
-# load_commits ────────┼──→ run_dbt_repo_metadata ─→ run_dbt_releases ─→ ...
-# load_workflow_runs ──┘
-# load_milestones ─────┘
+# load_* (параллельно)
+#   ↓
+# run_dbt_raw_commits → run_dbt_issues → ... → run_dbt_raw_milestones
+#   ↓
+# run_dbt_stg_commits
+#   ↓
+# run_dbt_raw_tests
+#   ↓
+# run_dbt_stg_tests
 
 load_tasks = []
 dbt_tasks = []
@@ -85,14 +90,31 @@ if load_tasks and dbt_tasks:
     for load_task in load_tasks:
         load_task >> dbt_tasks[0]
 
-# Run dbt tests after all raw tables are loaded
-run_dbt_tests = DbtRunOperator(
-    task_id="run_dbt_tests",
-    table_name="all",
+# Run dbt staged models after raw layer
+run_dbt_stg_commits = DbtRunOperator(
+    task_id="run_dbt_stg_commits",
+    dbt_model="stg_commits",
+    dbt_project_dir="/opt/airflow/dbt",
+    dag=dag,
+)
+dbt_tasks[-1] >> run_dbt_stg_commits
+
+# Run dbt raw layer tests
+run_dbt_raw_tests = DbtRunOperator(
+    task_id="run_dbt_raw_tests",
+    dbt_layer="raw",
     command="test",
     dbt_project_dir="/opt/airflow/dbt",
     dag=dag,
 )
+run_dbt_stg_commits >> run_dbt_raw_tests
 
-# Tests run after the last raw table (milestones)
-dbt_tasks[-1] >> run_dbt_tests
+# Run dbt staged layer tests
+run_dbt_stg_tests = DbtRunOperator(
+    task_id="run_dbt_stg_tests",
+    dbt_layer="staged",
+    command="test",
+    dbt_project_dir="/opt/airflow/dbt",
+    dag=dag,
+)
+run_dbt_raw_tests >> run_dbt_stg_tests

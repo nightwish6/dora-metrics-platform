@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: stg_commits
+    description: >
+      Staging model for GitHub commits. Flattened from raw JSON data.
+      Primary key for DORA Lead Time calculations.
+    columns:
+      # ─── id
+      - name: id
+        description: "Internal surrogate primary key"
+        data_tests:
+          - unique
+          - not_null
+
+      # ─── commit_author_date
+      - name: commit_author_date
+        description: "Initial point for Lead Time measurement — commit author timestamp"
+        data_tests:
+          - not_in_future
+          - commit_date_not_too_old
+          - commit_date_after_unix_epoch
+
+      # ─── sha
+      - name: sha
+        description: "Unique commit identifier — links data across tables"
+        data_tests:
+          - unique
+          - not_null
+
+      # ─── repo_name
+      - name: repo_name
+        description: "Repository name — used for metrics grouping by projects"
+        data_tests:
+          - not_null
+          - valid_repo_name
+
+      # ─── commit_message
+      - name: commit_message
+        description: "Commit message — used for change type analysis (features, fixes, breaking changes)"
+        data_tests:
+          - commit_message_min_length

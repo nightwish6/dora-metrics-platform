@@ -7,11 +7,11 @@ select = [
     "E",      # pycodestyle errors
     "W",      # pycodestyle warnings
     "F",      # pyflakes
-    "I",      # isort (порядок импортов)
-    "UP",     # pyupgrade (современный синтаксис)
+    "I",      # isort (import sorting)
+    "UP",     # pyupgrade (modern syntax)
 ]
 ignore = [
-    "E501",   # Длина строки — контролируется линтером отдельно
+    "E501",   # Line length — controlled separately by the linter
 ]
 
 [tool.ruff.lint.isort]

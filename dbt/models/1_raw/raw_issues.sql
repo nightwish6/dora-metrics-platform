@@ -5,7 +5,7 @@
     alias='issues',
     unique_key='id'
 ) }}
-SELECT
+SELECT DISTINCT
     md5(CAST(t.number AS VARCHAR)) AS id,
     CAST(t AS JSON) AS data,
     'issues' AS source_name,
