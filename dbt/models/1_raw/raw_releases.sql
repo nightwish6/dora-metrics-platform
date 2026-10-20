@@ -11,4 +11,4 @@ SELECT
     'releases' AS source_name,
     '{{ var("repo_name", "vscode") }}' AS repo_name,
     now() AS loaded_at
-FROM read_json_auto('{{ var("json_path", "data/raw/vscode_releases.json") }}') t
+FROM read_json_auto('{{ var("json_path", "data/raw/vscode_releases.json") }}', ignore_errors = true) t

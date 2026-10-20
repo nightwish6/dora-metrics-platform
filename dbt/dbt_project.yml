@@ -27,3 +27,4 @@ models:
     1_raw:
       +materialized: incremental
       +incremental_strategy: delete+insert
+

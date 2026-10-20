@@ -134,9 +134,34 @@ class DbtRunOperator(BaseOperator):
             )
             raise FileNotFoundError(f"JSON file not found: {json_file}. " f"Run the API load task first.")
 
-        with open(json_file) as f:
-            data = json.load(f)
-            record_count = len(data) if isinstance(data, list) else 1
+        try:
+            with open(json_file) as f:
+                data = json.load(f)
+                record_count = len(data) if isinstance(data, list) else 1
+        except json.JSONDecodeError as e:
+            self.log.error(
+                "JSON decode error in %s: %s (line %d, column %d)",
+                json_file,
+                e.msg,
+                e.lineno,
+                e.colno,
+            )
+            # Read problematic context for debugging
+            try:
+                with open(json_file, "r", errors="replace") as f:
+                    lines = f.readlines()
+                    line_start = max(0, e.lineno - 3)
+                    line_end = min(len(lines), e.lineno + 2)
+                    self.log.error(
+                        "Problematic context (lines %d-%d):",
+                        line_start + 1,
+                        line_end,
+                    )
+                    for i in range(line_start, line_end):
+                        self.log.error("  %d: %s", i + 1, lines[i].rstrip())
+            except Exception:
+                self.log.error("Could not read problematic context from file")
+            raise
 
         self.log.info(
             "Running dbt for %s: %d records in %s",

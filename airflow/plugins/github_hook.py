@@ -78,7 +78,7 @@ class GitHubHook(BaseHook):
         since_param_value: str | None = None,
         until_param_name: str = "until",
         until_param_value: str | None = None,
-        max_records: int = 10000,
+        max_records: int = 5000,
         data_array_key: str | None = None,
     ) -> list[dict[str, Any]]:
         """
@@ -232,7 +232,7 @@ class GitHubHook(BaseHook):
         since_param_value: str | None = None,
         until_param_name: str = "until",
         until_param_value: str | None = None,
-        max_records: int = 10000,
+        max_records: int = 5000,
         data_array_key: str | None = None,
     ) -> Any:
         """

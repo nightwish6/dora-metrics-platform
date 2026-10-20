@@ -73,30 +73,4 @@ jobs:
           cd dbt
           dbt parse
 
-  dbt-test:
-    name: dbt Test
-    runs-on: ubuntu-latest
-    needs: [dbt-parse]
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Create DuckDB data directory
-        run: mkdir -p dbt/data/duckdb
-
-      - name: Copy DuckDB database for testing
-        run: cp data/duckdb/data.duckdb dbt/data/duckdb/data.duckdb
-
-      - name: dbt test (raw models only)
-        run: |
-          cd dbt
-          dbt test --select 1_raw

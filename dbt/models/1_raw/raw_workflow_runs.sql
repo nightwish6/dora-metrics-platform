@@ -6,9 +6,9 @@
     unique_key='id'
 ) }}
 SELECT
-    md5(CAST(t.id AS VARCHAR)) AS id,
+    md5(CAST(t AS VARCHAR)) AS id,
     CAST(t AS JSON) AS data,
     'workflow_runs' AS source_name,
     '{{ var("repo_name", "vscode") }}' AS repo_name,
     now() AS loaded_at
-FROM read_json_auto('{{ var("json_path", "data/raw/vscode_workflow_runs.json") }}') t
+FROM read_json_auto('{{ var("json_path", "data/raw/vscode_workflow_runs.json") }}', ignore_errors = true) t

@@ -29,3 +29,7 @@ dbt/logs/
 
 # Data files
 data/duckdb/*.duckdb
+data/raw
+
+# AI assistant config
+.gigacode_vsc/
