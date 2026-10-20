@@ -148,7 +148,7 @@ class DbtRunOperator(BaseOperator):
             )
             # Read problematic context for debugging
             try:
-                with open(json_file, "r", errors="replace") as f:
+                with open(json_file, errors="replace") as f:
                     lines = f.readlines()
                     line_start = max(0, e.lineno - 3)
                     line_end = min(len(lines), e.lineno + 2)
