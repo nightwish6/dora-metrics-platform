@@ -40,7 +40,7 @@ endpoints = list(seen.values())
 #   4. run_dbt_raw_tests — tests raw layer
 #   5. run_dbt_stg_tests — tests staged layer
 #
-# load_* (параллельно)
+# load_* (parallel)
 #   ↓
 # run_dbt_raw_commits → run_dbt_issues → ... → run_dbt_raw_milestones
 #   ↓
