@@ -44,5 +44,5 @@ SELECT DISTINCT
     data->>'committer.type' as committer_type,
     try_cast(data->>'committer.site_admin' as boolean) as committer_site_admin,
     data->>'parents' as parents,
-    now() AS loaded_at
+    current_timestamp AS loaded_at
 FROM {{ ref('raw_commits') }}

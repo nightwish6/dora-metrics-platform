@@ -10,5 +10,5 @@ SELECT DISTINCT
     CAST(t AS JSON) AS data,
     'workflow_runs' AS source_name,
     '{{ var("repo_name", "vscode") }}' AS repo_name,
-    now() AS loaded_at
+    current_timestamp AS loaded_at
 FROM read_json_auto('{{ var("json_path", "data/raw/vscode_workflow_runs.json") }}', ignore_errors = true) t
