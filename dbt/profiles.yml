@@ -6,4 +6,7 @@ dora_metrics_platform:
       path: "data/duckdb/data.duckdb"
       schema: main
       threads: 1
+      settings:
+        max_memory: "1GB"
+        temp_directory: "data/duckdb/tmp"      
       

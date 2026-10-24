@@ -8,11 +8,11 @@
 SELECT DISTINCT
     id,
     repo_name,
-    data->>'sha' as sha,
-    data->>'url' as url,
-    data->>'html_url' as html_url,
-    data->>'node_id' as node_id,
-    data->>'comments_url' as comments_url,
+    data->>'$.sha' as sha,
+    data->>'$.url' as url,
+    data->>'$.html_url' as html_url,
+    data->>'$.node_id' as node_id,
+    data->>'$.comments_url' as comments_url,
     data->>'$.commit.message' as commit_message,
     data->>'$.commit.tree.sha' as commit_tree_sha,
     data->>'$.commit.tree.url' as commit_tree_url,
@@ -29,20 +29,25 @@ SELECT DISTINCT
     data->>'$.commit.verification.signature' as commit_verification_signature,
     data->>'$.commit.verification.payload' as commit_verification_payload,
     try_cast(data->>'$.commit.verification.verified_at' as timestamp) as commit_verification_verified_at,
-    data->>'author.login' as author_login,
-    try_cast(data->>'author.id' as bigint) as author_id,
-    data->>'author.node_id' as author_node_id,
-    data->>'author.avatar_url' as author_avatar_url,
-    data->>'author.html_url' as author_html_url,
-    data->>'author.type' as author_type,
-    try_cast(data->>'author.site_admin' as boolean) as author_site_admin,
-    data->>'committer.login' as committer_login,
-    try_cast(data->>'committer.id' as bigint) as committer_id,
-    data->>'committer.node_id' as committer_node_id,
-    data->>'committer.avatar_url' as committer_avatar_url,
-    data->>'committer.html_url' as committer_html_url,
-    data->>'committer.type' as committer_type,
-    try_cast(data->>'committer.site_admin' as boolean) as committer_site_admin,
-    data->>'parents' as parents,
-    now() AS loaded_at
+    data->>'$.author.login' as author_login,
+    try_cast(data->>'$.author.id' as bigint) as author_id,
+    data->>'$.author.node_id' as author_node_id,
+    data->>'$.author.avatar_url' as author_avatar_url,
+    data->>'$.author.html_url' as author_html_url,
+    data->>'$.author.type' as author_type,
+    try_cast(data->>'$.author.site_admin' as boolean) as author_site_admin,
+    data->>'$.committer.login' as committer_login,
+    try_cast(data->>'$.committer.id' as bigint) as committer_id,
+    data->>'$.committer.node_id' as committer_node_id,
+    data->>'$.committer.avatar_url' as committer_avatar_url,
+    data->>'$.committer.html_url' as committer_html_url,
+    data->>'$.committer.type' as committer_type,
+    try_cast(data->>'$.committer.site_admin' as boolean) as committer_site_admin,
+    data->>'$.parents' as parents,
+    current_timestamp AS loaded_at
 FROM {{ ref('raw_commits') }}
+{% if is_incremental() %}
+WHERE try_cast(data->>'$.commit.committer.date' as timestamp) > (
+    SELECT COALESCE(MAX(commit_committer_date), '1900-01-01') FROM {{ this }}
+)
+{% endif %}

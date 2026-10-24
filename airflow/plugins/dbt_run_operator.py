@@ -8,6 +8,9 @@ This operator:
 
 If this operator fails, it is retried WITHOUT re-calling the API,
 because the JSON file already exists on disk.
+
+For staging models, if dbt fails with OOM, falls back to direct
+Python/DuckDB batch loading from raw table.
 """
 
 from __future__ import annotations
@@ -17,9 +20,22 @@ import os
 from typing import Any
 
 from config_loader import load_endpoint_config
+from staging_loader import StagingDataLoader
 
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
+
+# OOM error patterns to detect
+OOM_ERROR_PATTERNS = [
+    "out of memory",
+    "OutOfMemory",
+    "MEMORY_LIMIT_EXCEEDED",
+    "heap space",
+    "unable to allocate",
+    "capacity",
+    "duckdb::OutOfMemoryException",
+    "MemoryError",
+]
 
 
 class DbtRunOperator(BaseOperator):
@@ -82,6 +98,9 @@ class DbtRunOperator(BaseOperator):
         self.command = command
         self.dbt_layer = dbt_layer
 
+        # Fallback mode for staging models (triggered on OOM)
+        self.fallback_mode = False
+
         # Load endpoint configuration only for raw mode
         if command == "run" and not self.generic_mode:
             if not self.table_name:
@@ -92,6 +111,55 @@ class DbtRunOperator(BaseOperator):
                     f"No endpoint config found for table_name='{self.table_name}'. "
                     f"Check config/github_incremental.yml"
                 )
+
+    # ================================================================
+    # OOM Detection
+    # ================================================================
+
+    def _detect_oom_error(self, exception: Exception | str) -> bool:
+        """
+        Detect if the error is an Out of Memory error.
+
+        Args:
+            exception: The exception object or error message string
+
+        Returns:
+            True if OOM detected, False otherwise
+        """
+        error_msg = str(exception).lower()
+        return any(pattern.lower() in error_msg for pattern in OOM_ERROR_PATTERNS)
+
+    # ================================================================
+    # Fallback Loader (uses StagingDataLoader)
+    # ================================================================
+
+    def _load_staging_fallback(self, model_name: str) -> dict[str, Any]:
+        """
+        Load staging data from raw table using batch processing.
+
+        This is used as a fallback when dbt fails with OOM during
+        JSON flattening.
+
+        Args:
+            model_name: Staging model name (e.g. 'stg_commits')
+
+        Returns:
+            Dict with loading statistics
+        """
+        self.log.info("Starting staging fallback loader for model: %s", model_name)
+
+        loader = StagingDataLoader(
+            model_name=model_name,
+            duckdb_path=self.duckdb_path,
+            config_path=self.config_path,
+            log_callback=self.log.info,
+        )
+
+        return loader.load()
+
+    # ================================================================
+    # Execute
+    # ================================================================
 
     def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         """
@@ -156,24 +224,130 @@ class DbtRunOperator(BaseOperator):
         if self.generic_mode:
             self.log.info("Running dbt model in generic mode: %s", self.dbt_model)
 
-            result = runner.invoke(
-                [
-                    "run",
-                    "--select",
-                    self.dbt_model,
-                ]
+            # ── Try dbt run with OOM detection ────────────────────
+            dbt_exception = None
+            result = None
+
+            try:
+                result = runner.invoke(
+                    [
+                        "run",
+                        "--select",
+                        self.dbt_model,
+                    ]
+                )
+            except Exception as exc:
+                dbt_exception = exc
+                self.log.error("dbtRunner.invoke raised exception: %s", exc)
+
+            # Check if dbt succeeded
+            if result and result.success:
+                self.log.info("dbt run completed successfully for model: %s", self.dbt_model)
+                return {
+                    "status": "success",
+                    "dbt_model": self.dbt_model,
+                }
+
+            # ── OOM detection and fallback ────────────────────────
+            # Try multiple sources for error message:
+            # 1. Exception from try-except
+            # 2. result.exception
+            # 3. result.response / result.result (if available)
+            error_msg = None
+            debug_info = {}
+
+            if dbt_exception:
+                error_msg = str(dbt_exception)
+                debug_info["exception_type"] = type(dbt_exception).__name__
+
+            if result:
+                debug_info["result_success"] = result.success
+                debug_info["has_result"] = result.result is not None if hasattr(result, "result") else False
+
+                if not error_msg and result.exception:
+                    error_msg = str(result.exception)
+
+                # Try to get error from result.response or result.result
+                if not error_msg:
+                    for attr in ["response", "result"]:
+                        val = getattr(result, attr, None)
+                        if val:
+                            val_str = str(val)
+                            if "error" in val_str.lower() or "error" in type(val).__name__.lower():
+                                error_msg = val_str
+                                debug_info[f"from_{attr}"] = True
+                                break
+
+                # --- Parse result.result for staging models ---
+                # result.result is RunExecutionResult containing RunResult
+                if not error_msg and self.dbt_model and self.dbt_model.startswith("stg_"):
+                    if hasattr(result, "result") and result.result:
+                        # RunExecutionResult.results is a list of RunResult
+                        results = getattr(result.result, "results", [])
+                        if isinstance(results, list):
+                            for r in results:
+                                msg = getattr(r, "message", None)
+                                if msg and "error" in str(msg).lower():
+                                    error_msg = str(msg)
+                                    debug_info["from_result_results"] = True
+                                    break
+
+            if not error_msg:
+                error_msg = "dbt run failed (no exception message available)"
+
+            self.log.debug(
+                "dbt run debug info for '%s': %s",
+                self.dbt_model,
+                debug_info,
             )
 
-            if not result.success:
-                error_msg = result.exception if result.exception else "dbt run failed with unknown error"
-                self.log.error("dbt run failed: %s", error_msg)
-                raise RuntimeError(f"dbt run failed: {error_msg}")
+            self.log.warning(
+                "dbt run failed for model '%s'. Error: %s",
+                self.dbt_model,
+                error_msg,
+            )
 
-            self.log.info("dbt run completed successfully for model: %s", self.dbt_model)
-            return {
-                "status": "success",
-                "dbt_model": self.dbt_model,
-            }
+            is_oom = self._detect_oom_error(error_msg)
+
+            # For staging models with unknown error, assume OOM
+            # and try fallback. This is safe because fallback simply
+            # reloads data from the raw layer.
+            if not is_oom and self.dbt_model.startswith("stg_"):
+                unknown_patterns = [
+                    "no exception message",
+                    "unknown error",
+                    "failed (no exception",
+                ]
+                is_oom = any(p in error_msg.lower() for p in unknown_patterns)
+                if is_oom:
+                    self.log.warning(
+                        "Unknown error for staging model '%s'. " "Assuming OOM and triggering fallback...",
+                        self.dbt_model,
+                    )
+
+            if is_oom:
+                self.log.warning(
+                    "OOM detected for model '%s'. Triggering fallback loader...",
+                    self.dbt_model,
+                )
+                if self.dbt_model.startswith("stg_"):
+                    try:
+                        fallback_result = self._load_staging_fallback(self.dbt_model)
+                        return fallback_result
+                    except Exception as fallback_error:
+                        self.log.error(
+                            "Fallback loader failed for '%s': %s",
+                            self.dbt_model,
+                            fallback_error,
+                        )
+                        raise RuntimeError(f"Fallback loader failed: {fallback_error}") from fallback_error
+                else:
+                    # Not a staging model, re-raise original error
+                    self.log.error("dbt run failed (non-staging model): %s", error_msg)
+                    raise RuntimeError(f"dbt run failed: {error_msg}") from dbt_exception
+
+            # Non-OOM error, re-raise
+            raise RuntimeError(f"dbt run failed: {error_msg}") from dbt_exception
 
         # --- Raw mode (reads JSON file) ---
         # Determine JSON file path

@@ -1,0 +1,178 @@
+# Staging models configuration
+# Maps raw tables to staging models with column definitions.
+# Used by DbtRunOperator fallback loader when dbt fails with OOM.
+
+staging_models:
+  stg_commits:
+    raw_table: commits
+    unique_key: id
+    batch_size: 5000
+    columns:
+      # ─── Computed / Passthrough ───────────────────────────────
+      - name: id
+        type: md5
+        json_path: "$.sha"
+
+      - name: repo_name
+        type: json_extract
+        json_path: "$.repo_name"
+
+      - name: parents
+        type: json_extract
+        json_path: "$.parents"
+
+      # ─── JSON Extract (varchar) ───────────────────────────────
+      - name: sha
+        type: json_extract
+        json_path: "$.sha"
+
+      - name: url
+        type: json_extract
+        json_path: "$.url"
+
+      - name: html_url
+        type: json_extract
+        json_path: "$.html_url"
+
+      - name: node_id
+        type: json_extract
+        json_path: "$.node_id"
+
+      - name: comments_url
+        type: json_extract
+        json_path: "$.comments_url"
+
+      - name: commit_message
+        type: json_extract
+        json_path: "$.commit.message"
+
+      - name: commit_tree_sha
+        type: json_extract
+        json_path: "$.commit.tree.sha"
+
+      - name: commit_tree_url
+        type: json_extract
+        json_path: "$.commit.tree.url"
+
+      - name: commit_url
+        type: json_extract
+        json_path: "$.commit.url"
+
+      - name: commit_author_name
+        type: json_extract
+        json_path: "$.commit.author.name"
+
+      - name: commit_author_email
+        type: json_extract
+        json_path: "$.commit.author.email"
+
+      - name: commit_committer_name
+        type: json_extract
+        json_path: "$.commit.committer.name"
+
+      - name: commit_committer_email
+        type: json_extract
+        json_path: "$.commit.committer.email"
+
+      - name: commit_verification_reason
+        type: json_extract
+        json_path: "$.commit.verification.reason"
+
+      - name: commit_verification_signature
+        type: json_extract
+        json_path: "$.commit.verification.signature"
+
+      - name: commit_verification_payload
+        type: json_extract
+        json_path: "$.commit.verification.payload"
+
+      - name: author_login
+        type: json_extract
+        json_path: "$.author.login"
+
+      - name: author_node_id
+        type: json_extract
+        json_path: "$.author.node_id"
+
+      - name: author_avatar_url
+        type: json_extract
+        json_path: "$.author.avatar_url"
+
+      - name: author_html_url
+        type: json_extract
+        json_path: "$.author.html_url"
+
+      - name: author_type
+        type: json_extract
+        json_path: "$.author.type"
+
+      - name: committer_login
+        type: json_extract
+        json_path: "$.committer.login"
+
+      - name: committer_node_id
+        type: json_extract
+        json_path: "$.committer.node_id"
+
+      - name: committer_avatar_url
+        type: json_extract
+        json_path: "$.committer.avatar_url"
+
+      - name: committer_html_url
+        type: json_extract
+        json_path: "$.committer.html_url"
+
+      - name: committer_type
+        type: json_extract
+        json_path: "$.committer.type"
+
+      # ─── JSON Extract (typed) ─────────────────────────────────
+      - name: commit_comment_count
+        type: json_extract_typed
+        json_path: "$.commit.comment_count"
+        sql_type: INTEGER
+
+      - name: commit_author_date
+        type: json_extract_typed
+        json_path: "$.commit.author.date"
+        sql_type: TIMESTAMP
+
+      - name: commit_committer_date
+        type: json_extract_typed
+        json_path: "$.commit.committer.date"
+        sql_type: TIMESTAMP
+
+      - name: commit_verification_verified
+        type: json_extract_typed
+        json_path: "$.commit.verification.verified"
+        sql_type: BOOLEAN
+
+      - name: commit_verification_verified_at
+        type: json_extract_typed
+        json_path: "$.commit.verification.verified_at"
+        sql_type: TIMESTAMP
+
+      - name: author_id
+        type: json_extract_typed
+        json_path: "$.author.id"
+        sql_type: BIGINT
+
+      - name: author_site_admin
+        type: json_extract_typed
+        json_path: "$.author.site_admin"
+        sql_type: BOOLEAN
+
+      - name: committer_id
+        type: json_extract_typed
+        json_path: "$.committer.id"
+        sql_type: BIGINT
+
+      - name: committer_site_admin
+        type: json_extract_typed
+        json_path: "$.committer.site_admin"
+        sql_type: BOOLEAN
+
+      # ─── Static / Computed ────────────────────────────────────
+      - name: loaded_at
+        type: static
+        expression: "CURRENT_TIMESTAMP"
