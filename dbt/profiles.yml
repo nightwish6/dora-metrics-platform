@@ -3,10 +3,10 @@ dora_metrics_platform:
   outputs:
     dev:
       type: duckdb
-      path: "data/duckdb/data.duckdb"
+      path: "../data/duckdb/data.duckdb"
       schema: main
       threads: 1
       settings:
-        max_memory: "1GB"
+        max_memory: "8GB"
         temp_directory: "data/duckdb/tmp"      
       

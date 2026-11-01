@@ -83,5 +83,17 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      - DUCKDB_PATH=data/duckdb/data.duckdb
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
 volumes:
   airflow-postgres-data:

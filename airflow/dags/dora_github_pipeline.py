@@ -99,6 +99,29 @@ run_dbt_stg_commits = DbtRunOperator(
 )
 dbt_tasks[-1] >> run_dbt_stg_commits
 
+# Sequential staged models (level 2_staged)
+stg_models = [
+    "stg_issues",
+    "stg_milestones",
+    "stg_pull_requests",
+    "stg_releases",
+    "stg_workflow_runs",
+]
+stg_tasks = []
+for model in stg_models:
+    task = DbtRunOperator(
+        task_id=f"run_dbt_{model}",
+        dbt_model=model,
+        dbt_project_dir="/opt/airflow/dbt",
+        dag=dag,
+    )
+    stg_tasks.append(task)
+
+# Chain: commits -> stg_issues -> stg_milestones -> stg_pull_requests -> stg_releases -> stg_workflow_runs
+run_dbt_stg_commits >> stg_tasks[0]
+for i in range(len(stg_tasks) - 1):
+    stg_tasks[i] >> stg_tasks[i + 1]
+
 # Run dbt raw layer tests
 run_dbt_raw_tests = DbtRunOperator(
     task_id="run_dbt_raw_tests",
@@ -107,7 +130,7 @@ run_dbt_raw_tests = DbtRunOperator(
     dbt_project_dir="/opt/airflow/dbt",
     dag=dag,
 )
-run_dbt_stg_commits >> run_dbt_raw_tests
+stg_tasks[-1] >> run_dbt_raw_tests
 
 # Run dbt staged layer tests
 run_dbt_stg_tests = DbtRunOperator(

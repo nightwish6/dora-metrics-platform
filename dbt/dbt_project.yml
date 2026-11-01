@@ -32,3 +32,5 @@ models:
       +schema: staging
       +materialized: incremental
       +incremental_strategy: delete+insert
+    3_marts:
+      +schema: marts

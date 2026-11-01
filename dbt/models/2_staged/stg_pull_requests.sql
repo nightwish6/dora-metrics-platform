@@ -1,0 +1,78 @@
+-- Staging model for pull requests
+-- Extracts flattened data from raw.pull_requests JSON
+
+{{ config(
+    alias='pull_requests',
+    unique_key='id',
+    primary_key='id'
+) }}
+SELECT DISTINCT
+    id,
+    repo_name,
+    data->>'$.url' as url,
+    data->>'$.repository_url' as repository_url,
+    data->>'$.labels_url' as labels_url,
+    data->>'$.comments_url' as comments_url,
+    data->>'$.review_comments_url' as review_comments_url,
+    data->>'$.review_comment_url' as review_comment_url,
+    data->>'$.statuses_url' as statuses_url,
+    data->>'$.html_url' as html_url,
+    data->>'$.issue_url' as issue_url,
+    data->>'$.id' as id_1,
+    data->>'$.node_id' as node_id,
+    data->>'$.number' as number,
+    data->>'$.title' as title,
+    data->>'$.user.login' as user_login,
+    try_cast(data->>'$.user.id' as bigint) as user_id,
+    data->>'$.user.avatar_url' as user_avatar_url,
+    data->>'$.user.url' as user_url,
+    data->>'$.user.html_url' as user_html_url,
+    data->>'$.labels' as labels,
+    data->>'$.state' as state,
+    data->>'$.locked' as locked,
+    data->>'$.draft' as draft,
+    data->>'$.body' as body,
+    try_cast(data->>'$.comments' as bigint) as comments,
+    try_cast(data->>'$.review_comments' as bigint) as review_comments,
+    try_cast(data->>'$.maintainer_can_modify' as boolean) as maintainer_can_modify,
+    try_cast(data->>'$.commits' as bigint) as commits,
+    try_cast(data->>'$.additions' as bigint) as additions,
+    try_cast(data->>'$.deletions' as bigint) as deletions,
+    try_cast(data->>'$.changed_files' as bigint) as changed_files,
+    try_cast(data->>'$.created_at' as timestamp) as created_at,
+    try_cast(data->>'$.updated_at' as timestamp) as updated_at,
+    try_cast(data->>'$.closed_at' as timestamp) as closed_at,
+    try_cast(data->>'$.merged_at' as timestamp) as merged_at,
+    data->>'$.merge_commit_sha' as merge_commit_sha,
+    data->>'$.assignee.login' as assignee_login,
+    data->>'$.assignee.id' as assignee_id,
+    data->>'$.assignee.url' as assignee_url,
+    data->>'$.assignee.html_url' as assignee_html_url,
+    data->>'$.assignees' as assignees,
+    data->>'$.requested_reviewers' as requested_reviewers,
+    data->>'$.requested_teams' as requested_teams,
+    data->>'$.head.label' as head_label,
+    data->>'$.head.ref' as head_ref,
+    data->>'$.head.sha' as head_sha,
+    data->>'$.head.user.login' as head_user_login,
+    try_cast(data->>'$.head.user.id' as bigint) as head_user_id,
+    data->>'$.head.user.url' as head_user_url,
+    data->>'$.head.user.html_url' as head_user_html_url,
+    data->>'$.head.repo.url' as head_repo_url,
+    data->>'$.head.repo.html_url' as head_repo_html_url,
+    data->>'$.base.label' as base_label,
+    data->>'$.base.ref' as base_ref,
+    data->>'$.base.sha' as base_sha,
+    data->>'$.base.user.login' as base_user_login,
+    try_cast(data->>'$.base.user.id' as bigint) as base_user_id,
+    data->>'$.base.user.url' as base_user_url,
+    data->>'$.base.user.html_url' as base_user_html_url,
+    data->>'$.base.repo.url' as base_repo_url,
+    data->>'$.base.repo.html_url' as base_repo_html_url,
+    current_timestamp AS loaded_at
+FROM {{ ref('raw_pull_requests') }}
+{% if is_incremental() %}
+WHERE try_cast(data->>'$.updated_at' as timestamp) > (
+    SELECT COALESCE(MAX(try_cast(updated_at as timestamp)), '1900-01-01') FROM {{ this }}
+)
+{% endif %}
