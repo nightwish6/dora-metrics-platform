@@ -3,7 +3,6 @@
 import os
 
 import duckdb
-import pandas as pd
 from dotenv import load_dotenv
 
 import streamlit as st
@@ -31,39 +30,41 @@ st.markdown(
 # ---------------------------------------------------------------------------
 DB_PATH = os.getenv("DUCKDB_PATH", "data/duckdb/data.duckdb")
 
+
 # ---------------------------------------------------------------------------
-# Data loading
+# Data loading — load into Pandas DataFrames, then close connection
 # ---------------------------------------------------------------------------
-conn = duckdb.connect(DB_PATH)
-
-
-def load_table(query: str) -> pd.DataFrame:
-    return conn.execute(query).fetchdf()
-
-
-# Page title and description
-st.markdown(
-    "<h1 style='font-size:30px;margin:0;'>Delivery Analytics</h1>",
-    unsafe_allow_html=True,
-)
-st.markdown(
+@st.cache_data(ttl=3600)
+def _load_all_data():
     """
-    Analysis of development performance for **Microsoft Visual Studio Code**.
-    Displays DORA metrics (Deployment Frequency, Lead Time, Change Failure Rate,
-    Time to Restore) alongside **Flow**, **Quality** and **Health** metrics.
+    1. Open file in read-only mode
+    2. Load all required tables into Pandas DataFrames
+    3. Close file → lock released immediately
+    4. Return all DataFrames (cached)
     """
-)
+    conn = duckdb.connect(DB_PATH, read_only=True)
 
-# ---------------------------------------------------------------------------
-# Load data
-# ---------------------------------------------------------------------------
-df = load_table("SELECT repo_name, period, release_count FROM marts.core_deployment_frequency ORDER BY period ASC")
-lt_df = load_table("SELECT repo_name, period, avg_lead_time_hours FROM marts.core_lead_time ORDER BY period ASC")
-cfr_df = load_table("SELECT repo_name, period, cfr_revert_rate FROM marts.core_cfr ORDER BY period ASC")
-mttr_df = load_table("SELECT repo_name, period, avg_restore_days FROM marts.core_time_to_restore ORDER BY period ASC")
-avg_df = load_table(
-    "SELECT repo_name, avg_release_count, avg_lead_time_hours, avg_cfr, avg_restore_days FROM marts.core_dora_metrics_avg"
-)
+    df = conn.execute(
+        "SELECT repo_name, period, release_count FROM marts.core_deployment_frequency ORDER BY period ASC"
+    ).fetchdf()
+    lt_df = conn.execute(
+        "SELECT repo_name, period, avg_lead_time_hours FROM marts.core_lead_time ORDER BY period ASC"
+    ).fetchdf()
+    cfr_df = conn.execute("SELECT repo_name, period, cfr_revert_rate FROM marts.core_cfr ORDER BY period ASC").fetchdf()
+    mttr_df = conn.execute(
+        "SELECT repo_name, period, avg_restore_days FROM marts.core_time_to_restore ORDER BY period ASC"
+    ).fetchdf()
+    avg_df = conn.execute(
+        "SELECT repo_name, avg_release_count, avg_lead_time_hours, avg_cfr, avg_restore_days FROM marts.core_dora_metrics_avg"
+    ).fetchdf()
+
+    conn.close()  # file closed, lock released!
+
+    return df, lt_df, cfr_df, mttr_df, avg_df
+
+
+# Load data once on startup (cached for 1 hour)
+df, lt_df, cfr_df, mttr_df, avg_df = _load_all_data()
 
 
 # ---------------------------------------------------------------------------
@@ -77,6 +78,21 @@ def build_chart_df(metric_df, value_col):
     repo_df["trend"] = repo_df[value_col].rolling(5, min_periods=1).mean()
     return repo_df, repo
 
+
+# ---------------------------------------------------------------------------
+# Page title and description
+# ---------------------------------------------------------------------------
+st.markdown(
+    "<h1 style='font-size:30px;margin:0;'>Delivery Analytics</h1>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    """
+    Analysis of development performance for **Microsoft Visual Studio Code**.
+    Displays DORA metrics (Deployment Frequency, Lead Time, Change Failure Rate,
+    Time to Restore) alongside **Flow**, **Quality** and **Health** metrics.
+    """
+)
 
 # ---------------------------------------------------------------------------
 # 4 metrics in a row

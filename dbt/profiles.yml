@@ -3,7 +3,7 @@ dora_metrics_platform:
   outputs:
     dev:
       type: duckdb
-      path: "../data/duckdb/data.duckdb"
+      path: "data/duckdb/data.duckdb"
       schema: main
       threads: 1
       settings:
