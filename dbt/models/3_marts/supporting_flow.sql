@@ -1,5 +1,6 @@
 {{ config(alias='supporting_flow') }}
 
+-- @description Supporting metric: Flow & Efficiency. Measures process efficiency with PR merge rate, PR closed time, assignee coverage, stale PR rate, draft PR ratio, locked PR/issue ratio, and issue-to-PR ratio.
 WITH pr AS (
     SELECT repo_name, DATE_TRUNC('month', created_at) as period,
         ROUND(100.0 * SUM(CASE WHEN merged_at IS NOT NULL THEN 1 ELSE 0 END) / COUNT(*), 2) as pr_merged_rate,
@@ -22,12 +23,13 @@ locked_issues AS (
     FROM {{ ref('stg_issues') }} WHERE repo_name IS NOT NULL GROUP BY 1, 2
 )
 
-SELECT 
-    COALESCE(p.repo_name, ci.repo_name, cp.repo_name, li.repo_name) as repo_name, 
+SELECT
+    COALESCE(p.repo_name, ci.repo_name, cp.repo_name, li.repo_name) as repo_name,
     COALESCE(p.period, ci.period, cp.period, li.period) as period,
     p.pr_merged_rate, p.pr_closed_time, p.assignee_coverage, p.stale_pr_rate,
     ROUND(1.0 * COALESCE(cp.cnt, 0) / NULLIF(ci.cnt, 0), 2) as issue_to_pr_ratio,
-    p.pr_draft_rate, p.locked_pr_ratio, li.locked_issue_ratio
+    p.pr_draft_rate, p.locked_pr_ratio, li.locked_issue_ratio,
+    current_timestamp AS loaded_at
 FROM pr p
 LEFT JOIN closed_issues ci ON p.repo_name = ci.repo_name AND p.period = ci.period
 LEFT JOIN closed_prs cp ON p.repo_name = cp.repo_name AND p.period = cp.period

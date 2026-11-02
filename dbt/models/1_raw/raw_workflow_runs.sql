@@ -1,6 +1,7 @@
--- Raw workflow runs model
--- Parameters:
+-- @description Raw GitHub Actions workflow run data loaded from JSON files. Contains CI/CD pipeline execution information including status, conclusion, head SHA, and timestamps. Each row represents a unique workflow run identified by `id`.
+-- @parameters:
 --   json_path: Path to JSON file with workflow run data
+--   repo_name: Repository name (defaults to 'vscode')
 {{ config(
     alias='workflow_runs',
     unique_key='id'

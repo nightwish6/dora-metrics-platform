@@ -3,7 +3,9 @@
 import os
 
 import duckdb
+import numpy as np
 from dotenv import load_dotenv
+from scipy import stats
 
 import streamlit as st
 
@@ -57,14 +59,19 @@ def _load_all_data():
     avg_df = conn.execute(
         "SELECT repo_name, avg_release_count, avg_lead_time_hours, avg_cfr, avg_restore_days FROM marts.core_dora_metrics_avg"
     ).fetchdf()
+    loaded_at = (
+        conn.execute("SELECT MAX(loaded_at) as max_loaded_at FROM marts.core_dora_metrics_avg")
+        .fetchdf()["max_loaded_at"]
+        .iloc[0]
+    )
 
     conn.close()  # file closed, lock released!
 
-    return df, lt_df, cfr_df, mttr_df, avg_df
+    return df, lt_df, cfr_df, mttr_df, avg_df, loaded_at
 
 
 # Load data once on startup (cached for 1 hour)
-df, lt_df, cfr_df, mttr_df, avg_df = _load_all_data()
+df, lt_df, cfr_df, mttr_df, avg_df, loaded_at = _load_all_data()
 
 
 # ---------------------------------------------------------------------------
@@ -75,15 +82,24 @@ def build_chart_df(metric_df, value_col):
     repo_df = metric_df[metric_df["repo_name"] == repo].copy()
     repo_df["period_str"] = repo_df["period"].dt.strftime("%Y-%m")
     repo_df.set_index("period_str", inplace=True)
-    repo_df["trend"] = repo_df[value_col].rolling(5, min_periods=1).mean()
+
+    # Linear regression trend
+    x = np.arange(len(repo_df))
+    slope, intercept, _, _, _ = stats.linregress(x, repo_df[value_col])
+    repo_df["trend"] = slope * x + intercept
+
     return repo_df, repo
 
 
 # ---------------------------------------------------------------------------
 # Page title and description
 # ---------------------------------------------------------------------------
+date_str = loaded_at.strftime("%Y-%m-%d %H:%M") if loaded_at else "N/A"
 st.markdown(
-    "<h1 style='font-size:30px;margin:0;'>Delivery Analytics</h1>",
+    f"""<div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 10px 0;">
+        <h1 style="font-size:30px;margin:0;padding:0;">Delivery Analytics</h1>
+        <span style="color:#999;font-size:14px;">Last updated: {date_str}</span>
+    </div>""",
     unsafe_allow_html=True,
 )
 st.markdown(
@@ -114,12 +130,8 @@ with col1:
         )
         st.markdown('<p style="text-align:center;margin:0;font-size:14px">releases / month</p>', unsafe_allow_html=True)
     st.divider()
-    st.line_chart(
-        repo_df[["release_count", "trend"]],
-        color=["#8B5CF6", "#777777"],
-        height=300,
-        use_container_width=True,
-    )
+    chart1 = repo_df[["release_count", "trend"]].rename(columns={"release_count": "Release count", "trend": "Trend"})
+    st.line_chart(chart1, color=["#8B5CF6", "#777777"], height=300, use_container_width=True)
 
 # === Col 2: Lead Time ===
 with col2:
@@ -142,7 +154,10 @@ with col2:
     st.divider()
 
     lt_chart_df, _ = build_chart_df(repo_lt_df, "avg_lead_time_hours")
-    st.line_chart(lt_chart_df[["avg_lead_time_hours", "trend"]], color=["#00CED1", "#777777"], height=300)
+    chart2 = lt_chart_df[["avg_lead_time_hours", "trend"]].rename(
+        columns={"avg_lead_time_hours": "Lead time (hours)", "trend": "Trend"}
+    )
+    st.line_chart(chart2, color=["#00CED1", "#777777"], height=300)
 
 # === Col 3: Change Failure Rate ===
 with col3:
@@ -164,7 +179,10 @@ with col3:
     st.divider()
 
     cfr_chart_df, _ = build_chart_df(repo_cfr_df, "cfr_revert_rate")
-    st.line_chart(cfr_chart_df[["cfr_revert_rate", "trend"]], color=["#3B82F6", "#777777"], height=300)
+    chart3 = cfr_chart_df[["cfr_revert_rate", "trend"]].rename(
+        columns={"cfr_revert_rate": "Change failure rate", "trend": "Trend"}
+    )
+    st.line_chart(chart3, color=["#3B82F6", "#777777"], height=300)
 
 # === Col 4: Time to Restore ===
 with col4:
@@ -186,4 +204,7 @@ with col4:
     st.divider()
 
     mttr_chart_df, _ = build_chart_df(repo_mttr_df, "avg_restore_days")
-    st.line_chart(mttr_chart_df[["avg_restore_days", "trend"]], color=["#EF4444", "#777777"], height=300)
+    chart4 = mttr_chart_df[["avg_restore_days", "trend"]].rename(
+        columns={"avg_restore_days": "Time to restore (days)", "trend": "Trend"}
+    )
+    st.line_chart(chart4, color=["#EF4444", "#777777"], height=300)

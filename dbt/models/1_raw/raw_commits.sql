@@ -1,6 +1,7 @@
--- Raw commits model
--- Parameters:
+-- @description Raw commits data loaded from JSON files. Contains commit metadata including author, committer, verification status, and timestamps. Each row represents a unique commit identified by `id`.
+-- @parameters:
 --   json_path: Path to JSON file with commit data
+--   repo_name: Repository name (defaults to 'vscode')
 {{ config(
     alias='commits',
     unique_key='id'

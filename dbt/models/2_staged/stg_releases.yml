@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: stg_releases
+    description: >
+      Staging model for GitHub releases. Flattened from raw JSON data.
+      Used for deployment frequency calculations.
+    columns:
+      # ─── id
+      - name: id
+        description: "Internal surrogate primary key"
+        data_tests:
+          - unique
+          - not_null
+
+      # ─── repo_name
+      - name: repo_name
+        description: "Repository name — used for metrics grouping by projects"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['vscode', 'airflow']
+
+      # ─── tag_name
+      - name: tag_name
+        description: "Release tag name"
+        data_tests:
+          - not_null
+
+      # ─── name
+      - name: name
+        description: "Release display name"
+        data_tests:
+          - not_null
+
+      # ─── created_at
+      - name: created_at
+        description: "Release creation timestamp"
+        data_tests:
+          - not_null
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── published_at
+      - name: published_at
+        description: "Release publication timestamp"
+        data_tests:
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── draft
+      - name: draft
+        description: "Whether the release is a draft"
+        data_tests:
+          - not_null
+
+      # ─── prerelease
+      - name: prerelease
+        description: "Whether the release is a pre-release"
+        data_tests:
+          - not_null

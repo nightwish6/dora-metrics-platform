@@ -1,10 +1,8 @@
--- Staging model for workflow runs
--- Extracts flattened data from raw.workflow_runs JSON
-
+-- @description Staging model for workflow runs. Flattens the raw JSON data into structured columns including CI/CD status, conclusion, head SHA, event type, and trigger info. Supports incremental refresh based on `updated_at`.
 {{ config(
     alias='workflow_runs',
-    unique_key='id',
-    primary_key='id'
+    primary_key='id',
+    unique_key='id'
 ) }}
 SELECT DISTINCT
     id,

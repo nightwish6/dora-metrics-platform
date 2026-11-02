@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: stg_issues
+    description: >
+      Staging model for GitHub issues. Flattened from raw JSON data.
+      Used for cycle time and throughput metrics.
+    columns:
+      # ─── id
+      - name: id
+        description: "Internal surrogate primary key"
+        data_tests:
+          - unique
+          - not_null
+
+      # ─── repo_name
+      - name: repo_name
+        description: "Repository name — used for metrics grouping by projects"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['vscode', 'airflow']
+
+      # ─── issue_number
+      - name: issue_number
+        description: "Issue number within the repository"
+        data_tests:
+          - not_null
+
+      # ─── state
+      - name: state
+        description: "Issue state — open, closed or all"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['open', 'closed', 'all']
+
+      # ─── title
+      - name: title
+        description: "Issue title"
+        data_tests:
+          - not_null
+
+      # ─── type
+      - name: type
+        description: "Issue type — issue or pull request"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['issue', 'pull_request']
+
+      # ─── created_at
+      - name: created_at
+        description: "Issue creation timestamp"
+        data_tests:
+          - not_null
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── updated_at
+      - name: updated_at
+        description: "Issue last update timestamp"
+        data_tests:
+          - not_null
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── closed_at
+      - name: closed_at
+        description: "Issue closure timestamp — nullable for open issues"
+        data_tests:
+          - not_in_future
+          - commit_date_after_unix_epoch

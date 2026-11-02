@@ -1,6 +1,4 @@
--- Staging model for issues
--- Extracts flattened data from raw.issues JSON
-
+-- @description Staging model for issues. Flattens the raw JSON data into structured columns including state, labels, assignees, milestones, comments, and timestamps. Supports incremental refresh based on `updated_at`.
 {{ config(
     alias='issues',
     unique_key='id',

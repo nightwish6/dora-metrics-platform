@@ -1,5 +1,6 @@
 {{ config(alias='supporting_health') }}
 
+-- @description Supporting metric: Project Health. Tracks commit velocity, top author share, on-time milestone completion, milestone coverage, and release-to-PR size ratio for overall project health assessment.
 WITH base_commits AS (
     SELECT repo_name, author_login, DATE_TRUNC('month', CAST(commit_author_date AS TIMESTAMP)) as period
     FROM {{ ref('stg_commits') }}
@@ -33,12 +34,13 @@ closed_prs AS (
     SELECT repo_name, DATE_TRUNC('month', CAST(created_at AS TIMESTAMP)) as period, COUNT(*) as cnt FROM {{ ref('stg_pull_requests') }} WHERE state = 'closed' AND repo_name IS NOT NULL GROUP BY 1, 2
 )
 
-SELECT 
-    COALESCE(c.repo_name, m.repo_name, r.repo_name) as repo_name, 
+SELECT
+    COALESCE(c.repo_name, m.repo_name, r.repo_name) as repo_name,
     COALESCE(c.period, m.period, r.period) as period,
     c.commit_count, c.commit_velocity, c.top_author_share,
     m.on_time_milestone, m.milestone_coverage,
-    ROUND(1.0 * COALESCE(cp.cnt, 0) / NULLIF(r.cnt, 0), 1) as release_pr_size
+    ROUND(1.0 * COALESCE(cp.cnt, 0) / NULLIF(r.cnt, 0), 1) as release_pr_size,
+    current_timestamp AS loaded_at
 FROM commits c
 FULL OUTER JOIN milestones m ON c.repo_name = m.repo_name AND c.period = m.period
 FULL OUTER JOIN releases r ON c.repo_name = r.repo_name AND c.period = r.period

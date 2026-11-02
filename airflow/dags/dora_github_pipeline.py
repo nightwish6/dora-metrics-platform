@@ -36,19 +36,20 @@ endpoints = list(seen.values())
 # Architecture:
 #   1. load_* tasks — all run in parallel
 #   2. run_dbt_raw_* tasks — all run sequentially, BUT only after ALL load tasks complete
-#   3. run_dbt_stg_commits — runs staged models
-#   4. run_dbt_raw_tests — tests raw layer
-#   5. run_dbt_stg_tests — tests staged layer
+#   3. run_dbt_stg_* — runs staged models sequentially
+#   4. marts models — runs sequentially
+#   5. run_dbt_raw_tests — tests raw layer
+#   6. run_dbt_stg_tests — tests staged layer
 #
 # load_* (parallel)
 #   ↓
 # run_dbt_raw_commits → run_dbt_issues → ... → run_dbt_raw_milestones
 #   ↓
-# run_dbt_stg_commits
+# run_dbt_stg_commits → stg_issues → stg_milestones → ... → stg_workflow_runs
 #   ↓
-# run_dbt_raw_tests
+# core_cfr → core_deployment_frequency → ... → supporting_quality
 #   ↓
-# run_dbt_stg_tests
+# run_dbt_raw_tests → run_dbt_stg_tests
 
 load_tasks = []
 dbt_tasks = []
@@ -122,7 +123,32 @@ run_dbt_stg_commits >> stg_tasks[0]
 for i in range(len(stg_tasks) - 1):
     stg_tasks[i] >> stg_tasks[i + 1]
 
-# Run dbt raw layer tests
+# ─── Marts layer (level 3_marts) ────────────────────────────────────
+marts_models = [
+    "core_cfr",
+    "core_deployment_frequency",
+    "core_dora_metrics_avg",
+    "core_lead_time",
+    "core_time_to_restore",
+    "supporting_flow",
+    "supporting_health",
+    "supporting_quality",
+]
+marts_tasks = []
+for model in marts_models:
+    task = DbtRunOperator(
+        task_id=f"run_dbt_{model}",
+        dbt_model=model,
+        dbt_project_dir="/opt/airflow/dbt",
+        dag=dag,
+    )
+    marts_tasks.append(task)
+
+stg_tasks[-1] >> marts_tasks[0]
+for i in range(len(marts_tasks) - 1):
+    marts_tasks[i] >> marts_tasks[i + 1]
+
+# ─── Tests (run after all models) ───────────────────────────────────
 run_dbt_raw_tests = DbtRunOperator(
     task_id="run_dbt_raw_tests",
     dbt_layer="raw",
@@ -130,9 +156,8 @@ run_dbt_raw_tests = DbtRunOperator(
     dbt_project_dir="/opt/airflow/dbt",
     dag=dag,
 )
-stg_tasks[-1] >> run_dbt_raw_tests
+marts_tasks[-1] >> run_dbt_raw_tests
 
-# Run dbt staged layer tests
 run_dbt_stg_tests = DbtRunOperator(
     task_id="run_dbt_stg_tests",
     dbt_layer="staged",

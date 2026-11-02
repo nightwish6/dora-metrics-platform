@@ -1,10 +1,8 @@
--- Staging model for milestones
--- Extracts flattened data from raw.milestones JSON
-
+-- @description Staging model for milestones. Flattens the raw JSON data into structured columns including state, description, due dates, creator info, and issue counts. Supports full refresh only (no incremental strategy).
 {{ config(
     alias='milestones',
-    unique_key='id',
-    primary_key='id'
+    primary_key='id',
+    unique_key='id'
 ) }}
 SELECT DISTINCT
     id,

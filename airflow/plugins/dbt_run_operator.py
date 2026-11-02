@@ -190,8 +190,8 @@ class DbtRunOperator(BaseOperator):
             if self.dbt_layer:
                 layer_models = {
                     "raw": "raw_commits raw_issues raw_milestones raw_pull_requests raw_releases raw_workflow_runs",
-                    "staged": "stg_commits",
-                    "marts": "",
+                    "staged": "stg_commits stg_issues stg_milestones stg_pull_requests stg_releases stg_workflow_runs",
+                    "marts": "core_cfr core_deployment_frequency core_dora_metrics_avg core_lead_time core_time_to_restore supporting_flow supporting_health supporting_quality",
                     "metrics": "",
                 }
                 models = layer_models.get(self.dbt_layer)

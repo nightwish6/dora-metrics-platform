@@ -1,5 +1,6 @@
 {{ config(alias='supporting_quality') }}
 
+-- @description Supporting metric: Code Quality. Measures revert rate, GPG signature verification, author/committer mismatch, bug ratio, comment density, quick-win ratio, and backlog aging.
 WITH commits AS (
     SELECT repo_name, DATE_TRUNC('month', commit_author_date) as period,
         ROUND(100.0 * SUM(CASE WHEN LOWER(commit_message) LIKE '%revert%' THEN 1 ELSE 0 END) / COUNT(*), 2) as revert_rate,
@@ -16,10 +17,11 @@ issues AS (
     FROM {{ ref('stg_issues') }} WHERE repo_name IS NOT NULL GROUP BY 1, 2
 )
 
-SELECT 
-    COALESCE(c.repo_name, i.repo_name) as repo_name, 
+SELECT
+    COALESCE(c.repo_name, i.repo_name) as repo_name,
     COALESCE(c.period, i.period) as period,
     c.revert_rate, c.gpg_verification, c.author_mismatch,
-    i.bug_ratio, i.comment_density, i.quick_win_ratio, i.backlog_aging
-FROM commits c 
+    i.bug_ratio, i.comment_density, i.quick_win_ratio, i.backlog_aging,
+    current_timestamp AS loaded_at
+FROM commits c
 FULL OUTER JOIN issues i ON c.repo_name = i.repo_name AND c.period = i.period

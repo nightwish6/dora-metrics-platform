@@ -1,0 +1,78 @@
+version: 2
+
+models:
+  - name: stg_workflow_runs
+    description: >
+      Staging model for GitHub Actions workflow runs. Flattened from raw JSON data.
+      Used for CI/CD pipeline throughput and reliability metrics.
+    columns:
+      # ─── id
+      - name: id
+        description: "Internal surrogate primary key"
+        data_tests:
+          - unique
+          - not_null
+
+      # ─── repo_name
+      - name: repo_name
+        description: "Repository name — used for metrics grouping by projects"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['vscode', 'airflow']
+
+      # ─── name
+      - name: name
+        description: "Workflow run name (from workflow file)"
+        data_tests:
+          - not_null
+
+      # ─── event
+      - name: event
+        description: "Triggering event (push, pull_request, etc.)"
+        data_tests:
+          - not_null
+
+      # ─── status
+      - name: status
+        description: "Workflow run status"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['queued', 'in_progress', 'completed']
+
+      # ─── conclusion
+      - name: conclusion
+        description: "Workflow run conclusion — nullable for in-progress runs"
+        data_tests:
+          - accepted_values:
+              values: ['success', 'failure', 'cancelled', 'skipped', 'neutral', null]
+
+      # ─── created_at
+      - name: created_at
+        description: "Workflow run creation timestamp"
+        data_tests:
+          - not_null
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── updated_at
+      - name: updated_at
+        description: "Workflow run last update timestamp"
+        data_tests:
+          - not_null
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── run_started_at
+      - name: run_started_at
+        description: "Workflow run actual start timestamp — nullable"
+        data_tests:
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── head_branch
+      - name: head_branch
+        description: "Branch that triggered the workflow run"
+        data_tests:
+          - not_null

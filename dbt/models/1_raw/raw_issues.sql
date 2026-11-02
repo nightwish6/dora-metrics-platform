@@ -1,6 +1,7 @@
--- Raw issues model
--- Parameters:
+-- @description Raw issues data loaded from JSON files. Contains GitHub issue/PR information including state, labels, assignees, milestones, and timestamps. Each row represents a unique issue identified by `id` (MD5 of issue number).
+-- @parameters:
 --   json_path: Path to JSON file with issue data
+--   repo_name: Repository name (defaults to 'vscode')
 {{ config(
     alias='issues',
     unique_key='id'

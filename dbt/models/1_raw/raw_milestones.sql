@@ -1,6 +1,7 @@
--- Raw milestones model
--- Parameters:
+-- @description Raw milestones data loaded from JSON files. Contains GitHub milestone information including title, description, due dates, and state tracking. Each row represents a unique milestone identified by `id`.
+-- @parameters:
 --   json_path: Path to JSON file with milestone data
+--   repo_name: Repository name (defaults to 'vscode')
 {{ config(
     alias='milestones',
     unique_key='id'

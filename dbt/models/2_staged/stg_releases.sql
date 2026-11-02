@@ -1,10 +1,8 @@
--- Staging model for releases
--- Extracts flattened data from raw.releases JSON
-
+-- @description Staging model for releases. Flattens the raw JSON data into structured columns including tag name, release name, asset info, and author details. Supports full refresh only (no incremental strategy).
 {{ config(
     alias='releases',
-    unique_key='id',
-    primary_key='id'
+    primary_key='id',
+    unique_key='id'
 ) }}
 SELECT DISTINCT
     id,

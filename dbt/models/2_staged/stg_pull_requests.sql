@@ -1,10 +1,8 @@
--- Staging model for pull requests
--- Extracts flattened data from raw.pull_requests JSON
-
+-- @description Staging model for pull requests. Flattens the raw JSON data into structured columns including state, labels, diffs, review stats, assignees, and branch information (head/base). Supports incremental refresh based on `updated_at`.
 {{ config(
     alias='pull_requests',
-    unique_key='id',
-    primary_key='id'
+    primary_key='id',
+    unique_key='id'
 ) }}
 SELECT DISTINCT
     id,

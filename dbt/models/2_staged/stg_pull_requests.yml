@@ -1,0 +1,96 @@
+version: 2
+
+models:
+  - name: stg_pull_requests
+    description: >
+      Staging model for GitHub pull requests. Flattened from raw JSON data.
+      Primary source for DORA Lead Time and deployment metrics.
+    columns:
+      # ─── id
+      - name: id
+        description: "Internal surrogate primary key"
+        data_tests:
+          - unique
+          - not_null
+
+      # ─── repo_name
+      - name: repo_name
+        description: "Repository name — used for metrics grouping by projects"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['vscode', 'airflow']
+
+      # ─── number
+      - name: number
+        description: "Pull request number within the repository"
+        data_tests:
+          - not_null
+
+      # ─── state
+      - name: state
+        description: "PR state — open or closed"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['open', 'closed']
+
+      # ─── title
+      - name: title
+        description: "Pull request title"
+        data_tests:
+          - not_null
+
+      # ─── created_at
+      - name: created_at
+        description: "PR creation timestamp"
+        data_tests:
+          - not_null
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── updated_at
+      - name: updated_at
+        description: "PR last update timestamp"
+        data_tests:
+          - not_null
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── closed_at
+      - name: closed_at
+        description: "PR closure timestamp — nullable for open PRs"
+        data_tests:
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── merged_at
+      - name: merged_at
+        description: "PR merge timestamp — nullable for unmerged PRs"
+        data_tests:
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── draft
+      - name: draft
+        description: "Whether the PR is in draft state"
+        data_tests:
+          - not_null
+
+      # ─── locked
+      - name: locked
+        description: "Whether the PR is locked"
+        data_tests:
+          - not_null
+
+      # ─── head_ref
+      - name: head_ref
+        description: "Source branch name"
+        data_tests:
+          - not_null
+
+      # ─── base_ref
+      - name: base_ref
+        description: "Target branch name"
+        data_tests:
+          - not_null

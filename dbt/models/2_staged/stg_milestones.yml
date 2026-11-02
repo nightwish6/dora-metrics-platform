@@ -1,0 +1,71 @@
+version: 2
+
+models:
+  - name: stg_milestones
+    description: >
+      Staging model for GitHub milestones. Flattened from raw JSON data.
+      Used for milestone-based tracking of issue/PR progress.
+    columns:
+      # ─── id
+      - name: id
+        description: "Internal surrogate primary key"
+        data_tests:
+          - unique
+          - not_null
+
+      # ─── repo_name
+      - name: repo_name
+        description: "Repository name — used for metrics grouping by projects"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['vscode', 'airflow']
+
+      # ─── number
+      - name: number
+        description: "Milestone number within the repository"
+        data_tests:
+          - not_null
+
+      # ─── state
+      - name: state
+        description: "Milestone state — open or closed"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['open', 'closed']
+
+      # ─── title
+      - name: title
+        description: "Milestone title"
+        data_tests:
+          - not_null
+
+      # ─── created_at
+      - name: created_at
+        description: "Milestone creation timestamp"
+        data_tests:
+          - not_null
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── updated_at
+      - name: updated_at
+        description: "Milestone last update timestamp"
+        data_tests:
+          - not_null
+          - not_in_future
+          - commit_date_after_unix_epoch
+
+      # ─── due_on
+      - name: due_on
+        description: "Milestone due date — nullable"
+        data_tests:
+          - not_in_future
+
+      # ─── closed_at
+      - name: closed_at
+        description: "Milestone closure timestamp — nullable for open milestones"
+        data_tests:
+          - not_in_future
+          - commit_date_after_unix_epoch

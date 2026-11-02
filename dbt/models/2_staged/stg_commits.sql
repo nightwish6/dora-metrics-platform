@@ -1,6 +1,4 @@
--- Staging model for commits
--- Extracts flattened data from raw.commits JSON
-
+-- @description Staging model for commits. Flattens the raw JSON data into structured columns including author/committer info, verification status, and commit metadata. Supports incremental refresh based on `commit_committer_date`.
 {{ config(
     alias='commits',
     unique_key='id'

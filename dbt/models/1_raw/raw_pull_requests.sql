@@ -1,4 +1,7 @@
--- Raw pull requests model
+-- @description Raw pull request data loaded from JSON files. Contains PR metadata including URLs, labels, states, and diff statistics. Each row represents a unique PR identified by `id` (MD5 of PR number).
+-- @parameters:
+--   json_path: Path to JSON file with PR data
+--   repo_name: Repository name (defaults to 'vscode')
 {{ config(
     alias='pull_requests',
     unique_key='id'

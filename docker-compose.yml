@@ -92,6 +92,7 @@ services:
     environment:
       - DUCKDB_PATH=data/duckdb/data.duckdb
     volumes:
+      - ./streamlit:/app/streamlit
       - ./data:/app/data
     restart: unless-stopped
 

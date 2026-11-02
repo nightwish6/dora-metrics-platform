@@ -1,6 +1,7 @@
--- Raw releases model
--- Parameters:
+-- @description Raw releases data loaded from JSON files. Contains GitHub release information including tag names, asset URLs, and author details. Each row represents a unique release identified by `id`.
+-- @parameters:
 --   json_path: Path to JSON file with release data
+--   repo_name: Repository name (defaults to 'vscode')
 {{ config(
     alias='releases',
     unique_key='id'

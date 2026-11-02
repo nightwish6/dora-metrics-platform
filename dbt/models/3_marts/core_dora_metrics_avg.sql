@@ -1,11 +1,13 @@
 {{ config(materialized='table') }}
 
+-- @description Aggregated DORA metrics per repository. Combines the four core DORA metrics (lead time, deployment frequency, change failure rate, time to restore) into a single summary table with monthly averages across all periods.
 SELECT
     repo_name,
     ROUND(AVG(release_count), 2) AS avg_release_count,
     ROUND(AVG(avg_lead_time_hours), 2) AS avg_lead_time_hours,
     ROUND(AVG(cfr_revert_rate), 4) AS avg_cfr,
-    ROUND(AVG(avg_restore_days), 2) AS avg_restore_days
+    ROUND(AVG(avg_restore_days), 2) AS avg_restore_days,
+    current_timestamp AS loaded_at
 FROM (
     SELECT
         df.repo_name,
