@@ -103,11 +103,11 @@ A direct copy of the GitHub API. Data is loaded as-is in JSON format without tra
 **7 models:**
 | Model | Source | Approx. rows |
 |-------|--------|--------------|
-| `raw_commits` | `/repos/{owner}/{repo}/commits` | 10,000+ |
-| `raw_issues` | `/repos/{owner}/{repo}/issues` | 5,000+ |
-| `raw_pull_requests` | `/repos/{owner}/{repo}/pulls` | 3,000+ |
-| `raw_releases` | `/repos/{owner}/{repo}/releases` | 200+ |
-| `raw_milestones` | `/repos/{owner}/{repo}/milestones` | 50+ |
+| `raw_commits` | `/repos/{owner}/{repo}/commits` | 83,000+ |
+| `raw_issues` | `/repos/{owner}/{repo}/issues` | 293,000+ |
+| `raw_pull_requests` | `/repos/{owner}/{repo}/pulls` | 56,000+ |
+| `raw_releases` | `/repos/{owner}/{repo}/releases` | 250+ |
+| `raw_milestones` | `/repos/{owner}/{repo}/milestones` | 400+ |
 | `raw_workflow_runs` | `/repos/{owner}/{repo}/actions/runs` | 8,000+ |
 
 **Features:**
