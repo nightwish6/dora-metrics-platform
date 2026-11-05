@@ -1,5 +1,6 @@
 """Streamlit Dashboard for Delivery Analytics."""
 
+import base64
 import os
 
 import duckdb
@@ -95,9 +96,16 @@ def build_chart_df(metric_df, value_col):
 # Page title and description
 # ---------------------------------------------------------------------------
 date_str = loaded_at.strftime("%Y-%m-%d %H:%M") if loaded_at else "N/A"
+assets_path = os.path.join(os.path.dirname(__file__), "assets", "vscode-logo.png")
+if os.path.exists(assets_path):
+    vscode_icon = f'<img src="data:image/png;base64,{base64.b64encode(open(assets_path, "rb").read()).decode()}" width="32" height="32">'
+else:
+    vscode_icon = ""
 st.markdown(
     f"""<div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 10px 0;">
-        <h1 style="font-size:30px;margin:0;padding:0;">Delivery Analytics</h1>
+        <h1 style="font-size:30px;margin:0;padding:0;display:flex;align-items:center;gap:10px;">
+            {vscode_icon} Delivery Analytics
+        </h1>
         <span style="color:#999;font-size:14px;">Last updated: {date_str}</span>
     </div>""",
     unsafe_allow_html=True,
